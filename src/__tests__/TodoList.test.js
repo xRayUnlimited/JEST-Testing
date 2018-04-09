@@ -1,18 +1,43 @@
 import React from 'react';
-import { shallow } from 'enzyme';
+import { shallow, mount } from 'enzyme';
 import toJson from 'enzyme-to-json';
-import TodoList from '../TodoList';
+import ConnectedComponent, { TodoList } from '../TodoList';
+import { reduxHelper } from '../reduxHelper';
+const initialState = { items: [] }
 
 describe(<TodoList />, () => {
 
-  test('renders without crashing', () =>{
-    shallow(<TodoList />);
+  describe('render', () => {
+    let component;
+    beforeEach( () => {
+      const tree = reduxHelper(ConnectedComponent, initialState).component
+      component = mount(tree);
+    });
+
+    it('matches snapshot', () => {
+      expect(toJson(component)).toMatchSnapshot();
+    })
   })
 
-  test('matches snapshot', () => {
-    const component = shallow(<TodoList />)
-    const tree = toJson(component)
-    expect(tree).toMatchSnapshot();
+  describe('functionality', () => {
+    it('updates state on change', () => {
+      let component = shallow(<TodoList items={[]} />)
+      let input = component.find('input');
+      input.simulate('focus');
+      input.simulate('change', { target: { name: 'name', value: 'Hello' } })
+      expect(component.state('name')).toEqual('Hello');
+    })
+
+    it('submits the form', () => {
+      let test = { dispatch: jest.fn() }
+      let component = mount(<TodoList dispatch={test.dispatch} items={[]} />)
+      component.setState({ name: 'Hello' })
+      component.find('form').simulate('submit');
+      expect(test.dispatch).toHaveBeenCalledTimes(1)
+      expect(component.state('name')).toEqual('')
+    })
+
+
   })
 
 })
